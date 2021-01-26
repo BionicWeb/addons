@@ -1,0 +1,34 @@
+{
+  "name": "Inverter MQTT",
+  "version": "0.1",
+  "slug": "inverter",
+  "description": "Inverter MQTT agent",
+  "url": "https://localhost",
+  "arch": ["armhf", "armv7", "aarch64", "amd64", "i386"],
+  "advanced": true,
+  "startup": "application",
+  "boot": "auto",
+  "options": {
+    "device": "/dev/hidraw0",
+    "run_interval": 120,
+    "amperage_factor": 1.0,
+    "watt_factor": 1.01,
+    "qpiri": 104,
+    "qpiws": 40,
+    "qmod": 5,
+    "qpigs": 110
+  },
+  "schema": {
+    "device": "str",
+    "run_interval": "int",
+    "amperage_factor": "float",
+    "watt_factor": "float",
+    "qpiri": "int",
+    "qpiws": "int",
+    "qmod": "int",
+    "qpigs": "int"
+  },
+  "devices": ["/dev/hidraw0:/dev/hidraw0:rwm","/dev/bus/usb:/dev/bus/usb:rwm"],
+  "services": ["mqtt:need"],
+  "image": "bionicweb/inverter-addon-{arch}"
+}

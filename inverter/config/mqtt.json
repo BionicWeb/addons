@@ -1,0 +1,8 @@
+{
+    "server": "172.30.33.0",
+    "port": "1883",
+    "topic": "homeassistant",
+    "devicename": "voltronic",
+    "username": "mqttuser",
+    "password": "password"
+}
