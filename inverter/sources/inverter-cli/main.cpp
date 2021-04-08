@@ -22,7 +22,6 @@
 #include <algorithm>
 #include <fstream>
 
-
 bool debugFlag = false;
 bool runOnce = false;
 
@@ -32,9 +31,9 @@ atomic_bool ups_status_changed(false);
 atomic_bool ups_qmod_changed(false);
 atomic_bool ups_qpiri_changed(false);
 atomic_bool ups_qpigs_changed(false);
+atomic_bool ups_qpigs2_changed(false);
 atomic_bool ups_qpiws_changed(false);
 atomic_bool ups_cmd_executed(false);
-
 
 // ---------------------------------------
 // Global configs read from 'inverter.conf'
@@ -43,73 +42,90 @@ string devicename;
 int runinterval;
 float ampfactor;
 float wattfactor;
-int qpiri, qpiws, qmod, qpigs;
+int qpiri, qpiws, qmod, qpigs, qpigs2;
 
 // ---------------------------------------
 
-void attemptAddSetting(int *addTo, string addFrom) {
-    try {
+void attemptAddSetting(int *addTo, string addFrom)
+{
+    try
+    {
         *addTo = stof(addFrom);
-    } catch (exception e) {
+    }
+    catch (exception e)
+    {
         cout << e.what() << '\n';
         cout << "There's probably a string in the settings file where an int should be.\n";
     }
 }
 
-void attemptAddSetting(float *addTo, string addFrom) {
-    try {
+void attemptAddSetting(float *addTo, string addFrom)
+{
+    try
+    {
         *addTo = stof(addFrom);
-    } catch (exception e) {
+    }
+    catch (exception e)
+    {
         cout << e.what() << '\n';
         cout << "There's probably a string in the settings file where a floating point should be.\n";
     }
 }
 
-void getSettingsFile(string filename) {
+void getSettingsFile(string filename)
+{
 
-    try {
+    try
+    {
         string fileline, linepart1, linepart2;
         ifstream infile;
         infile.open(filename);
 
-        while(!infile.eof()) {
+        while (!infile.eof())
+        {
             getline(infile, fileline);
             size_t firstpos = fileline.find("#");
 
-            if(firstpos != 0 && fileline.length() != 0) {    // Ignore lines starting with # (comment lines)
+            if (firstpos != 0 && fileline.length() != 0)
+            { // Ignore lines starting with # (comment lines)
                 size_t delimiter = fileline.find("=");
                 linepart1 = fileline.substr(0, delimiter);
-                linepart2 = fileline.substr(delimiter+1, string::npos - delimiter);
+                linepart2 = fileline.substr(delimiter + 1, string::npos - delimiter);
 
-                if(linepart1 == "device")
+                if (linepart1 == "device")
                     devicename = linepart2;
-                else if(linepart1 == "run_interval")
+                else if (linepart1 == "run_interval")
                     attemptAddSetting(&runinterval, linepart2);
-                else if(linepart1 == "amperage_factor")
+                else if (linepart1 == "amperage_factor")
                     attemptAddSetting(&ampfactor, linepart2);
-                else if(linepart1 == "watt_factor")
+                else if (linepart1 == "watt_factor")
                     attemptAddSetting(&wattfactor, linepart2);
-                else if(linepart1 == "watt_factor")
+                else if (linepart1 == "watt_factor")
                     attemptAddSetting(&wattfactor, linepart2);
-                else if(linepart1 == "qpiri")
+                else if (linepart1 == "qpiri")
                     attemptAddSetting(&qpiri, linepart2);
-                else if(linepart1 == "qpiws")
+                else if (linepart1 == "qpiws")
                     attemptAddSetting(&qpiws, linepart2);
-                else if(linepart1 == "qmod")
+                else if (linepart1 == "qmod")
                     attemptAddSetting(&qmod, linepart2);
-                else if(linepart1 == "qpigs")
+                else if (linepart1 == "qpigs")
                     attemptAddSetting(&qpigs, linepart2);
+                else if (linepart1 == "qpigs2")
+                    attemptAddSetting(&qpigs2, linepart2);
                 else
                     continue;
             }
         }
         infile.close();
-    } catch (...) {
+    }
+    catch (...)
+    {
         cout << "Settings could not be read properly...\n";
     }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[])
+{
 
     // Reply1
     float voltage_grid;
@@ -157,43 +173,59 @@ int main(int argc, char* argv[]) {
     int out_mode;
     float batt_redischarge_voltage;
 
+    // Reply3
+    float pv2_input_current;
+    float pv2_input_voltage;
+    float pv2_input_watts;
+
     // Get command flag settings from the arguments (if any)
     InputParser cmdArgs(argc, argv);
     const string &rawcmd = cmdArgs.getCmdOption("-r");
 
-    if(cmdArgs.cmdOptionExists("-h") || cmdArgs.cmdOptionExists("--help")) {
+    if (cmdArgs.cmdOptionExists("-h") || cmdArgs.cmdOptionExists("--help"))
+    {
         return print_help();
     }
-    if(cmdArgs.cmdOptionExists("-d")) {
+    if (cmdArgs.cmdOptionExists("-d"))
+    {
         debugFlag = true;
     }
-    if(cmdArgs.cmdOptionExists("-1") || cmdArgs.cmdOptionExists("--run-once")) {
+    if (cmdArgs.cmdOptionExists("-1") || cmdArgs.cmdOptionExists("--run-once"))
+    {
         runOnce = true;
     }
     lprintf("INVERTER: Debug set");
 
     // Get the rest of the settings from the conf file
-    if( access( "./inverter.conf", F_OK ) != -1 ) { // file exists
+    if (access("./inverter.conf", F_OK) != -1)
+    { // file exists
         getSettingsFile("./inverter.conf");
-    } else { // file doesn't exist
+    }
+    else
+    { // file doesn't exist
         getSettingsFile("/etc/inverter/inverter.conf");
     }
 
     bool ups_status_changed(false);
-    ups = new cInverter(devicename,qpiri,qpiws,qmod,qpigs);
+    ups = new cInverter(devicename, qpiri, qpiws, qmod, qpigs, qpigs2);
 
     // Logic to send 'raw commands' to the inverter..
-    if (!rawcmd.empty()) {
+    if (!rawcmd.empty())
+    {
         ups->ExecuteCmd(rawcmd);
         // We're piggybacking off the qpri status response...
         printf("Reply:  %s\n", ups->GetQpiriStatus()->c_str());
         exit(0);
-    } else {
+    }
+    else
+    {
         ups->runMultiThread();
     }
 
-    while (true) {
-        if (ups_status_changed) {
+    while (true)
+    {
+        if (ups_status_changed)
+        {
             int mode = ups->GetMode();
 
             if (mode)
@@ -202,27 +234,33 @@ int main(int argc, char* argv[]) {
             ups_status_changed = false;
         }
 
-        if (ups_qmod_changed && ups_qpiri_changed && ups_qpigs_changed) {
+        if (ups_qmod_changed && ups_qpiri_changed && ups_qpigs_changed && ups_qpigs2_changed)
+        {
 
             ups_qmod_changed = false;
             ups_qpiri_changed = false;
             ups_qpigs_changed = false;
+            ups_qpigs2_changed = false;
 
             int mode = ups->GetMode();
-            string *reply1   = ups->GetQpigsStatus();
-            string *reply2   = ups->GetQpiriStatus();
+            string *reply1 = ups->GetQpigsStatus();
+            string *reply2 = ups->GetQpiriStatus();
+            string *reply3 = ups->GetQpigs2Status();
             string *warnings = ups->GetWarnings();
 
-            if (reply1 && reply2 && warnings) {
+            if (reply1 && reply2 && reply3 && warnings)
+            {
 
                 // Parse and display values
                 sscanf(reply1->c_str(), "%f %f %f %f %d %d %d %d %f %d %d %d %f %f %f %d %s", &voltage_grid, &freq_grid, &voltage_out, &freq_out, &load_va, &load_watt, &load_percent, &voltage_bus, &voltage_batt, &batt_charge_current, &batt_capacity, &temp_heatsink, &pv_input_current, &pv_input_voltage, &scc_voltage, &batt_discharge_current, &device_status);
                 sscanf(reply2->c_str(), "%f %f %f %f %f %d %d %f %f %f %f %f %d %d %d %d %d %d - %d %d %d %f", &grid_voltage_rating, &grid_current_rating, &out_voltage_rating, &out_freq_rating, &out_current_rating, &out_va_rating, &out_watt_rating, &batt_rating, &batt_recharge_voltage, &batt_under_voltage, &batt_bulk_voltage, &batt_float_voltage, &batt_type, &max_grid_charge_current, &max_charge_current, &in_voltage_range, &out_source_priority, &charger_source_priority, &machine_type, &topology, &out_mode, &batt_redischarge_voltage);
+                sscanf(reply3->c_str(), "%f %f %f", &pv2_input_current, &pv2_input_voltage, &pv2_input_watts);
 
                 // There appears to be a discrepancy in actual DMM measured current vs what the meter is
                 // telling me it's getting, so lets add a variable we can multiply/divide by to adjust if
                 // needed.  This should be set in the config so it can be changed without program recompile.
-                if (debugFlag) {
+                if (debugFlag)
+                {
                     printf("INVERTER: ampfactor from config is %.2f\n", ampfactor);
                     printf("INVERTER: wattfactor from config is %.2f\n", wattfactor);
                 }
@@ -250,6 +288,9 @@ int main(int argc, char* argv[]) {
                 printf("  \"PV_in_voltage\":%.1f,\n", pv_input_voltage);
                 printf("  \"PV_in_current\":%.1f,\n", pv_input_current);
                 printf("  \"PV_in_watts\":%.1f,\n", pv_input_watts);
+                printf("  \"PV2_in_voltage\":%.1f,\n", pv2_input_voltage);
+                printf("  \"PV2_in_current\":%.1f,\n", pv2_input_current);
+                printf("  \"PV2_in_watts\":%.1f,\n", pv2_input_watts);
                 printf("  \"PV_in_watthour\":%.4f,\n", pv_input_watthour);
                 printf("  \"SCC_voltage\":%.4f,\n", scc_voltage);
                 printf("  \"Load_pct\":%d,\n", load_percent);
@@ -280,8 +321,10 @@ int main(int argc, char* argv[]) {
                 // Delete reply string so we can update with new data when polled again...
                 delete reply1;
                 delete reply2;
+                delete reply3;
 
-                if(runOnce) {
+                if (runOnce)
+                {
                     // Do once and exit instead of loop endlessly
                     lprintf("INVERTER: All queries complete, exiting loop.");
                     exit(0);

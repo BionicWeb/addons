@@ -8,6 +8,7 @@ QPIRI="$(bashio::config 'qpiri')"
 QPIWS="$(bashio::config 'qpiws')"
 QMOD="$(bashio::config 'qmod')"
 QPIGS="$(bashio::config 'qpigs')"
+QPIGS2="$(bashio::config 'qpigs2')"
 
 if ! bashio::services.available "mqtt"; then
     bashio::log.error "No internal MQTT service found"
@@ -79,6 +80,11 @@ if bashio::config.has_value 'qpigs'; then
 else
     QPIGS=110
 fi
+if bashio::config.has_value 'qpigs2'; then
+    QPIGS2="$(bashio::config 'qpigs2')"
+else
+    QPIGS2=110
+fi
 
 echo "device=$DEVICE"                       >  /etc/inverter/inverter.conf
 echo "run_interval=$RUN_INTERVAL"           >> /etc/inverter/inverter.conf
@@ -88,3 +94,4 @@ echo "qpiri=$QPIRI"                         >> /etc/inverter/inverter.conf
 echo "qpiws=$QPIWS"                         >> /etc/inverter/inverter.conf
 echo "qmod=$QMOD"                           >> /etc/inverter/inverter.conf
 echo "qpigs=$QPIGS"                         >> /etc/inverter/inverter.conf
+echo "qpigs2=$QPIGS2"                       >> /etc/inverter/inverter.conf

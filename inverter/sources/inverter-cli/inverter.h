@@ -6,12 +6,14 @@
 
 using namespace std;
 
-class cInverter {
+class cInverter
+{
     unsigned char buf[1024]; //internal work buffer
 
     char warnings[1024];
     char status1[1024];
     char status2[1024];
+    char status3[1024];
     char mode;
 
     std::string device;
@@ -22,20 +24,22 @@ class cInverter {
     bool query(const char *cmd, int replysize);
     uint16_t cal_crc_half(uint8_t *pin, uint8_t len);
 
-    public:
-        cInverter(std::string devicename, int qpiri, int qpiws, int qmod, int qpigs);
-        void poll();
-        void runMultiThread() {
-            std::thread t1(&cInverter::poll, this);
-            t1.detach();
-        }
+public:
+    cInverter(std::string devicename, int qpiri, int qpiws, int qmod, int qpigs, int qpigs2);
+    void poll();
+    void runMultiThread()
+    {
+        std::thread t1(&cInverter::poll, this);
+        t1.detach();
+    }
 
-        string *GetQpiriStatus();
-        string *GetQpigsStatus();
-        string *GetWarnings();
+    string *GetQpiriStatus();
+    string *GetQpigsStatus();
+    string *GetQpigs2Status();
+    string *GetWarnings();
 
-        int GetMode();
-        void ExecuteCmd(const std::string cmd);
+    int GetMode();
+    void ExecuteCmd(const std::string cmd);
 };
 
 #endif // ___INVERTER_H
