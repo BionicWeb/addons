@@ -14,6 +14,7 @@ cInverter::cInverter(std::string devicename, int qpiri, int qpiws, int qmod, int
     device = devicename;
     status1[0] = 0;
     status2[0] = 0;
+    status3[0] = 0;
     warnings[0] = 0;
     mode = 0;
     qpiri = qpiri;
@@ -27,6 +28,14 @@ string *cInverter::GetQpigsStatus()
 {
     m.lock();
     string *result = new string(status1);
+    m.unlock();
+    return result;
+}
+
+string *cInverter::GetQpigs2Status()
+{
+    m.lock();
+    string *result = new string(status3);
     m.unlock();
     return result;
 }
